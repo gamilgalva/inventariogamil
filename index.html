@@ -3,87 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gamil Inventory Turbo | v6.0</title>
+    <title>Gamil Inventory Pro | Cloud Turbo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
         body { font-family: 'Inter', sans-serif; }
         .row-ok { border-left: 5px solid #10b981; background-color: #f0fdf4; }
         .row-pending { border-left: 5px solid #ef4444; background-color: #fff; }
+        .animate-bounce-short { animation: bounce 0.5s ease-in-out 1; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen pb-10 text-slate-900">
 
     <header class="bg-slate-900 text-white shadow-xl sticky top-0 z-50">
         <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-            <h1 class="text-xl font-black tracking-tighter text-blue-400">GAMIL <span class="text-white">TURBO</span></h1>
-            <div id="sync-status" class="text-[10px] bg-green-500/20 text-green-400 px-3 py-1 rounded-full border border-green-500/50">Sincronizado</div>
+            <div>
+                <h1 class="text-xl font-extrabold tracking-tighter text-blue-400">GAMIL <span class="text-white">CLOUD</span></h1>
+                <p class="text-[10px] uppercase tracking-widest opacity-60 font-bold">Gestão Industrial v6.5 Turbo</p>
+            </div>
+            <div id="sync-status" class="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span class="text-[10px] font-bold text-slate-300 uppercase italic">Sincronizado</span>
+            </div>
         </div>
     </header>
 
     <main class="container mx-auto px-4 py-6 max-w-4xl">
+        
         <nav class="flex bg-white rounded-xl p-1 shadow-sm mb-6 border border-slate-200">
-            <button onclick="switchTab('import')" id="btn-import" class="flex-1 py-3 rounded-lg text-sm font-bold bg-slate-900 text-white transition-all uppercase">1. Carga</button>
-            <button onclick="switchTab('scan')" id="btn-scan" class="flex-1 py-3 rounded-lg text-sm font-bold text-slate-500 transition-all uppercase">2. PDA</button>
-            <button onclick="switchTab('history')" id="btn-history" class="flex-1 py-3 rounded-lg text-sm font-bold text-slate-500 transition-all uppercase">3. Histórico</button>
+            <button onclick="switchTab('import')" id="btn-import" class="flex-1 py-3 rounded-lg text-sm font-bold bg-slate-900 text-white transition-all uppercase">1. CARGA EXCEL</button>
+            <button onclick="switchTab('scan')" id="btn-scan" class="flex-1 py-3 rounded-lg text-sm font-bold text-slate-500 transition-all uppercase">2. MODO PDA</button>
+            <button onclick="switchTab('history')" id="btn-history" class="flex-1 py-3 rounded-lg text-sm font-bold text-slate-500 transition-all uppercase">3. HISTÓRICO</button>
         </nav>
 
         <section id="sec-import" class="block space-y-4">
-            <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 text-center">
-                <h2 class="text-lg font-bold mb-4">Importação Instantânea (8k+)</h2>
-                <textarea id="bultos-input" rows="8" class="w-full p-4 border-2 border-slate-100 rounded-xl bg-slate-50 font-mono text-xs mb-4 outline-none focus:border-blue-500" placeholder="Cole os bultos aqui..."></textarea>
-                <div class="flex gap-2">
-                    <button id="btn-process" onclick="processImport()" class="flex-[2] bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700">SUBIR PARA NUVEM</button>
-                    <button onclick="purgeCloud()" class="flex-1 bg-red-50 text-red-600 font-bold rounded-xl border border-red-100">LIMPAR</button>
+            <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+                <h2 class="text-lg font-bold mb-1 text-slate-800">Importação em Lote (8k+)</h2>
+                <p class="text-xs text-slate-500 mb-4 italic">Cole a coluna do Excel. O sistema removerá duplicados e sincronizará instantaneamente.</p>
+                
+                <textarea id="bultos-input" rows="8" 
+                    class="w-full p-4 border-2 border-slate-100 rounded-xl bg-slate-50 font-mono text-xs mb-4 focus:border-blue-500 outline-none transition-all" 
+                    placeholder="Cole os bultos aqui..."></textarea>
+                
+                <div class="flex flex-col md:flex-row gap-3">
+                    <button id="btn-process" onclick="processImport()" class="flex-[2] bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 transition-all">
+                        SUBIR PARA NUVEM (INSTANTÂNEO)
+                    </button>
+                    <button onclick="purgeCloud()" class="flex-1 bg-red-50 text-red-600 font-bold rounded-xl border border-red-100 hover:bg-red-100 transition-all uppercase">
+                        Limpar Nuvem
+                    </button>
                 </div>
             </div>
         </section>
 
         <section id="sec-scan" class="hidden space-y-4">
             <div class="bg-white rounded-2xl shadow-xl border-4 border-blue-600 p-4">
-                <input type="text" id="pda-input" class="w-full p-4 text-3xl text-center font-black bg-slate-100 rounded-xl outline-none" placeholder="SCANNER" autofocus>
-                <div id="pda-feedback" class="hidden mt-4 p-4 rounded-xl text-center font-bold text-lg"></div>
+                <input type="text" id="pda-input" class="w-full p-4 text-3xl text-center font-black bg-slate-50 rounded-xl outline-none" placeholder="AGUARDANDO SCAN" autofocus>
+                <div id="pda-feedback" class="hidden mt-4 p-4 rounded-xl text-center font-bold text-lg animate-bounce-short"></div>
             </div>
 
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-white p-4 rounded-xl border shadow-sm text-center">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase block">Total</span>
-                    <span id="count-total" class="text-2xl font-black">0</span>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 text-center shadow-sm">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase block font-bold">Total Sistema</span>
+                    <span id="count-total" class="text-xl font-black text-slate-800">0</span>
                 </div>
                 <div class="bg-emerald-600 p-4 rounded-xl text-white text-center shadow-md">
-                    <span class="text-[10px] font-bold opacity-80 uppercase block">Lidos</span>
-                    <span id="count-scanned" class="text-2xl font-black">0</span>
+                    <span class="text-[9px] font-bold opacity-80 uppercase block font-bold uppercase">Confirmados</span>
+                    <span id="count-scanned" class="text-xl font-black">0</span>
                 </div>
                 <div class="bg-rose-500 p-4 rounded-xl text-white text-center shadow-md">
-                    <span class="text-[10px] font-bold opacity-80 uppercase block">Faltam</span>
-                    <span id="count-missing" class="text-2xl font-black">0</span>
+                    <span class="text-[9px] font-bold opacity-80 uppercase block font-bold uppercase">Inexistentes</span>
+                    <span id="count-missing" class="text-xl font-black">0</span>
                 </div>
-                <div class="bg-white p-4 rounded-xl border shadow-sm text-center text-slate-800">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase block">Acuracidade</span>
-                    <span id="count-percent" class="text-2xl font-black">0%</span>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 text-center shadow-sm">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase block font-bold">Acuracidade</span>
+                    <span id="count-percent" class="text-xl font-black text-slate-800">0%</span>
                 </div>
             </div>
 
-            <div class="bg-white rounded-2xl shadow-md border overflow-hidden">
-                <div class="p-4 bg-slate-50 border-b flex justify-between items-center">
-                    <div class="flex gap-2">
-                        <button onclick="renderList('all')" class="text-[10px] font-bold bg-white border px-3 py-2 rounded shadow-sm">TUDO</button>
-                        <button onclick="renderList('pending')" class="text-[10px] font-bold bg-white border px-3 py-2 rounded text-red-500 shadow-sm">PENDENTES</button>
+            <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+                <div class="p-3 bg-slate-50 border-b flex justify-between items-center">
+                    <div class="flex gap-1">
+                        <button onclick="renderList('all')" class="px-3 py-1.5 text-[10px] font-bold rounded bg-white border shadow-sm">TUDO</button>
+                        <button onclick="renderList('pending')" class="px-3 py-1.5 text-[10px] font-bold rounded bg-white border text-red-500 shadow-sm uppercase">Faltantes</button>
                     </div>
-                    <button onclick="saveToHistory()" class="bg-slate-800 text-white text-[10px] px-3 py-2 rounded font-bold uppercase shadow-sm">Fechar Mês</button>
+                    <button onclick="saveSessionToHistory()" class="bg-slate-800 text-white text-[10px] px-4 py-2 rounded-lg font-bold hover:bg-black transition-all uppercase">Fechar Mês</button>
                 </div>
-                <div id="inventory-list" class="max-h-[400px] overflow-y-auto divide-y font-mono text-sm"></div>
+                <div id="inventory-list" class="max-h-[450px] overflow-y-auto divide-y divide-slate-100 font-mono text-sm italic"></div>
             </div>
         </section>
 
         <section id="sec-history" class="hidden space-y-4">
-            <div id="history-container" class="space-y-3"></div>
+            <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 text-center">
+                <h2 class="text-lg font-bold mb-4">Relatórios Arquivados</h2>
+                <div id="history-container" class="space-y-3"></div>
+            </div>
         </section>
     </main>
 
     <script>
+        // FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyBEJpvsh0A2wFIMINGLJx7L0jrXXLcRizk",
             authDomain: "gamil-inventory.firebaseapp.com",
@@ -96,42 +119,47 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const docRef = db.collection("app").doc("inventario_atual");
-        const histRef = db.collection("historico");
+        const histRef = db.collection("historico_gamil");
 
         let inventory = {};
+        let activeFilter = 'all';
 
-        // SINCRONIZAÇÃO EM TEMPO REAL (MUITO MAIS RÁPIDA)
+        // SINCRONIZAÇÃO TURBO EM TEMPO REAL
         docRef.onSnapshot((doc) => {
             if (doc.exists) {
                 inventory = doc.data().dados || {};
-                renderList('all');
+                renderList(activeFilter);
             }
         });
 
-        // CARGA INSTANTÂNEA
+        // CARGA INSTANTÂNEA (8k+)
         async function processImport() {
             const raw = document.getElementById('bultos-input').value;
             const lines = [...new Set(raw.split(/[\n\r,]+/).map(l => l.trim()).filter(l => l !== ""))];
-            if(lines.length === 0) return alert("Lista vazia!");
+            if(lines.length === 0) return alert("Erro: Lista vazia.");
 
             const btn = document.getElementById('btn-process');
-            btn.disabled = true; btn.innerText = "PROCESSANDO...";
+            btn.disabled = true; btn.innerText = "PROCESSANDO NUVEM...";
 
             const novoPack = {};
             lines.forEach(code => novoPack[code] = { s: 'p', t: null }); // s: status, t: time
 
             try {
-                // Salva tudo de uma vez num único documento
                 await docRef.set({ dados: novoPack });
-                alert(`✅ ${lines.length} bultos carregados instantaneamente!`);
-            } catch (e) { alert("Erro ao salvar. Verifique se as REGRAS do Firebase estão IF TRUE."); }
-
-            btn.disabled = false; btn.innerText = "SUBIR PARA NUVEM";
-            document.getElementById('bultos-input').value = "";
-            switchTab('scan');
+                btn.innerText = "✅ SUCESSO!";
+                setTimeout(() => {
+                    alert(`${lines.length} bultos carregados com sucesso!`);
+                    btn.disabled = false; btn.innerText = "SUBIR PARA NUVEM (INSTANTÂNEO)";
+                    document.getElementById('bultos-input').value = "";
+                    switchTab('scan');
+                }, 500);
+            } catch (e) {
+                alert("Erro ao salvar. Verifique as Regras do Firebase (if true).");
+                btn.disabled = false; btn.innerText = "TENTAR NOVAMENTE";
+            }
         }
 
-        // SCANNER PDA
+        // PDA SCANNER
         const pdaInput = document.getElementById('pda-input');
         pdaInput.addEventListener('keypress', async (e) => {
             if (e.key === 'Enter') {
@@ -143,23 +171,30 @@
 
         async function validate(code) {
             const f = document.getElementById('pda-feedback');
-            f.className = "mt-4 p-4 rounded-xl text-center font-bold text-lg block";
+            f.className = "mt-4 p-4 rounded-xl text-center font-bold text-lg block animate-bounce-short";
             
             if (inventory[code]) {
                 if (inventory[code].s === 'ok') {
-                    f.innerText = "⚠️ JÁ LIDO: " + code; f.classList.add('bg-amber-500', 'text-white'); beep(300, 0.1);
+                    f.innerText = "⚠️ JÁ LIDO: " + code;
+                    f.classList.add('bg-amber-500', 'text-white');
+                    beep(300, 0.1);
                 } else {
                     inventory[code].s = 'ok';
                     inventory[code].t = new Date().toLocaleTimeString();
                     await docRef.update({ [`dados.${code}`]: inventory[code] });
-                    f.innerText = "✅ OK: " + code; f.classList.add('bg-emerald-500', 'text-white'); beep(600, 0.1);
+                    f.innerText = "✅ CONFIRMADO: " + code;
+                    f.classList.add('bg-emerald-600', 'text-white');
+                    beep(600, 0.1);
                 }
             } else {
-                f.innerText = "❌ DESCONHECIDO: " + code; f.classList.add('bg-rose-600', 'text-white'); beep(150, 0.5);
+                f.innerText = "❌ NÃO CONSTA NO SISTEMA: " + code;
+                f.classList.add('bg-rose-600', 'text-white');
+                beep(150, 0.5);
             }
         }
 
         function renderList(filter) {
+            activeFilter = filter;
             const container = document.getElementById('inventory-list');
             container.innerHTML = "";
             let c = { total: 0, ok: 0 };
@@ -171,7 +206,9 @@
 
                 const div = document.createElement('div');
                 div.className = `p-3 flex justify-between items-center ${inventory[key].s === 'ok' ? 'row-ok' : 'row-pending'}`;
-                div.innerHTML = `<span class="font-bold">${key}</span><span class="text-[9px] uppercase font-black">${inventory[key].s === 'ok' ? 'Lido' : 'Falta'}</span>`;
+                div.innerHTML = `<span class="font-bold text-xs">${key}</span>
+                                 <span class="text-[9px] font-black uppercase px-2 py-1 rounded border ${inventory[key].s === 'ok' ? 'border-emerald-200 text-emerald-600' : 'border-rose-100 text-rose-500'}">
+                                 ${inventory[key].s === 'ok' ? 'Picado ' + inventory[key].t : 'Pendente'}</span>`;
                 container.appendChild(div);
             });
 
@@ -181,20 +218,25 @@
             document.getElementById('count-percent').innerText = c.total > 0 ? Math.round((c.ok / c.total)*100) + "%" : "0%";
         }
 
-        async function saveToHistory() {
+        async function saveSessionToHistory() {
             const okKeys = Object.keys(inventory).filter(k => inventory[k].s === 'ok');
-            if(okKeys.length === 0) return alert("Nada para arquivar.");
-            if(confirm("Fechar inventário atual?")) {
-                await histRef.add({ data: new Date().toLocaleDateString(), total: okKeys.length, ts: Date.now() });
+            if(okKeys.length === 0) return alert("Nada picado.");
+            if(confirm("Deseja fechar o mês e arquivar?")) {
+                await histRef.add({ date: new Date().toLocaleDateString(), total: okKeys.length, ts: Date.now() });
                 alert("Arquivado!");
+                switchTab('history');
             }
         }
 
-        async function purgeCloud() { if(confirm("Apagar tudo na nuvem?")) await docRef.delete(); }
+        async function purgeCloud() { if(confirm("⚠️ LIMPAR TUDO NA NUVEM?")) await docRef.delete(); }
 
         function switchTab(tab) {
-            ['import', 'scan', 'history'].forEach(t => document.getElementById(`sec-${t}`).classList.add('hidden'));
+            ['import', 'scan', 'history'].forEach(t => {
+                document.getElementById(`sec-${t}`).classList.add('hidden');
+                document.getElementById(`btn-${t}`).className = 'flex-1 py-3 rounded-lg text-sm font-bold text-slate-500';
+            });
             document.getElementById(`sec-${tab}`).classList.remove('hidden');
+            document.getElementById(`btn-${tab}`).className = 'flex-1 py-3 rounded-lg text-sm font-bold bg-slate-900 text-white shadow-md';
             if(tab === 'scan') setTimeout(() => pdaInput.focus(), 200);
             if(tab === 'history') renderHistory();
         }
@@ -202,17 +244,17 @@
         function renderHistory() {
             histRef.orderBy('ts', 'desc').get().then(snap => {
                 const container = document.getElementById('history-container');
-                container.innerHTML = snap.empty ? "Vazio." : "";
+                container.innerHTML = snap.empty ? '<p class="text-slate-400 italic">Nenhum histórico.</p>' : "";
                 snap.forEach(doc => {
                     const h = doc.data();
-                    container.innerHTML += `<div class="p-4 bg-white border rounded-xl flex justify-between items-center">
-                        <span class="font-bold">${h.data}</span><span class="font-bold text-emerald-600">${h.total} BULTOS</span>
+                    container.innerHTML += `<div class="p-4 bg-white border rounded-xl flex justify-between items-center shadow-sm">
+                        <span class="font-bold">${h.date}</span><span class="font-bold text-emerald-600 uppercase text-xs">${h.total} BULTOS ENCONTRADOS</span>
                     </div>`;
                 });
             });
         }
 
-        function beep(f, d) { try { const c = new AudioContext(); const o = c.createOscillator(); const g = c.createGain(); o.connect(g); g.connect(c.destination); o.frequency.value = f; o.start(); setTimeout(() => o.stop(), d * 1000); } catch(e) {} }
+        function beep(f, d) { try { const c = new (window.AudioContext || window.webkitAudioContext)(); const o = c.createOscillator(); const g = c.createGain(); o.connect(g); g.connect(c.destination); o.frequency.value = f; o.start(); setTimeout(() => o.stop(), d * 1000); } catch(e) {} }
     </script>
 </body>
 </html>
