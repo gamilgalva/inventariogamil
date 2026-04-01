@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gamil Inventory Cloud | v4.5</title>
+    <title>Gamil Inventory Cloud | v5.0 Professional</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -13,20 +13,19 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
         body { font-family: 'Inter', sans-serif; }
         .row-ok { border-left: 5px solid #10b981; background-color: #f0fdf4; }
-        .row-pending { border-left: 4px solid #ef4444; background-color: #fff; }
-        .animate-pulse-fast { animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+        .row-pending { border-left: 5px solid #ef4444; background-color: #fff; }
+        .btn-loading { cursor: not-allowed; opacity: 0.7; }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen pb-10">
+<body class="bg-slate-100 min-h-screen pb-10 text-slate-900">
 
     <header class="bg-slate-900 text-white shadow-xl sticky top-0 z-50">
         <div class="container mx-auto px-4 py-4 flex justify-between items-center">
             <div>
                 <h1 class="text-xl font-extrabold tracking-tighter text-blue-400">GAMIL <span class="text-white">CLOUD</span></h1>
-                <p class="text-[10px] uppercase tracking-widest opacity-60 font-bold">Gestão Industrial de Inventário</p>
+                <p class="text-[10px] uppercase tracking-widest opacity-60 font-bold">Sistema de Sincronização em Massa</p>
             </div>
-            <div id="sync-status" class="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+            <div id="sync-indicator" class="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
                 <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                 <span class="text-[10px] font-bold text-slate-300 uppercase">Cloud Online</span>
             </div>
@@ -43,15 +42,15 @@
 
         <section id="sec-import" class="block space-y-4">
             <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
-                <h2 class="text-lg font-bold mb-2 text-slate-800">Carga Geral (Abbas)</h2>
-                <p class="text-xs text-slate-500 mb-4 italic">Cole a coluna do Excel. O sistema removerá duplicados e enviará em lotes de 500.</p>
+                <h2 class="text-lg font-bold mb-1 text-slate-800">Importação em Lote</h2>
+                <p class="text-xs text-slate-500 mb-4">Suporta até 10.000 bultos. O sistema remove duplicados e sincroniza em blocos de segurança.</p>
                 
                 <textarea id="bultos-input" rows="8" 
                     class="w-full p-4 border-2 border-slate-100 rounded-xl bg-slate-50 font-mono text-xs mb-4 focus:border-blue-500 outline-none transition-all" 
-                    placeholder="Cole os bultos aqui..."></textarea>
+                    placeholder="Cole as colunas aqui..."></textarea>
                 
                 <div class="flex flex-col md:flex-row gap-3">
-                    <button id="btn-process" onclick="processImport()" class="flex-[2] bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 disabled:bg-slate-400 transition-all">
+                    <button id="btn-process" onclick="processImport()" class="flex-[2] bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 transition-all">
                         SINCRONIZAR COM A NUVEM
                     </button>
                     <button onclick="purgeCloud()" class="flex-1 bg-red-50 text-red-600 font-bold rounded-xl border border-red-100 hover:bg-red-100 transition-all">
@@ -63,51 +62,51 @@
 
         <section id="sec-scan" class="hidden space-y-4">
             <div class="bg-white rounded-2xl shadow-xl border-4 border-blue-600 p-4">
-                <input type="text" id="pda-input" class="w-full p-4 text-3xl text-center font-black bg-slate-50 rounded-xl outline-none border-none focus:ring-0" placeholder="LEITURA DO BULTO" autofocus>
+                <input type="text" id="pda-input" class="w-full p-4 text-3xl text-center font-black bg-slate-50 rounded-xl outline-none" placeholder="AGUARDANDO SCAN" autofocus>
                 <div id="pda-feedback" class="hidden mt-4 p-4 rounded-xl text-center font-bold text-lg"></div>
             </div>
 
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 text-center shadow-sm">
-                    <span class="text-[9px] font-bold text-slate-400 uppercase block">Lista Única</span>
-                    <span id="count-total" class="text-xl font-black text-slate-800">0</span>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase block font-bold">Registrados</span>
+                    <span id="count-total" class="text-xl font-black">0</span>
                 </div>
                 <div class="bg-emerald-600 p-4 rounded-xl text-white text-center shadow-md">
-                    <span class="text-[9px] font-bold opacity-80 uppercase block">Lidos</span>
+                    <span class="text-[9px] font-bold opacity-80 uppercase block font-bold">Lidos (OK)</span>
                     <span id="count-scanned" class="text-xl font-black">0</span>
                 </div>
                 <div class="bg-rose-500 p-4 rounded-xl text-white text-center shadow-md">
-                    <span class="text-[9px] font-bold opacity-80 uppercase block">Faltantes</span>
+                    <span class="text-[9px] font-bold opacity-80 uppercase block font-bold">Faltantes</span>
                     <span id="count-missing" class="text-xl font-black">0</span>
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-slate-200 text-center shadow-sm">
-                    <span class="text-[9px] font-bold text-slate-400 uppercase block">Acuracidade</span>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase block font-bold">Status</span>
                     <span id="count-percent" class="text-xl font-black text-slate-800">0%</span>
                 </div>
             </div>
 
             <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
                 <div class="p-3 bg-slate-50 border-b flex justify-between items-center">
-                    <div class="flex gap-2">
-                        <button onclick="renderList('all')" class="px-3 py-1 text-[10px] font-bold rounded bg-white border shadow-sm">TODOS</button>
-                        <button onclick="renderList('pending')" class="px-3 py-1 text-[10px] font-bold rounded bg-white border text-red-500 shadow-sm uppercase">Faltantes</button>
+                    <div class="flex gap-1">
+                        <button onclick="renderList('all')" class="px-3 py-1.5 text-[10px] font-bold rounded bg-white border">TUDO</button>
+                        <button onclick="renderList('pending')" class="px-3 py-1.5 text-[10px] font-bold rounded bg-white border text-red-500 uppercase">Faltantes</button>
                     </div>
-                    <button onclick="saveSessionToHistory()" class="bg-slate-800 text-white text-[10px] px-4 py-2 rounded-lg font-bold hover:bg-black transition-all">FECHAR MÊS</button>
+                    <button onclick="saveSessionToHistory()" class="bg-slate-800 text-white text-[10px] px-4 py-2 rounded-lg font-bold hover:bg-black uppercase">Fechar Inventário</button>
                 </div>
-                <div id="inventory-list" class="max-h-[400px] overflow-y-auto divide-y divide-slate-100 font-mono"></div>
+                <div id="inventory-list" class="max-h-[450px] overflow-y-auto divide-y divide-slate-100 font-mono text-sm"></div>
             </div>
         </section>
 
         <section id="sec-history" class="hidden space-y-4">
             <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 text-center">
-                <h2 class="text-lg font-bold mb-4 text-slate-800">Inventários Arquivados</h2>
-                <div id="history-container" class="space-y-3 text-sm italic text-slate-400">Nenhum histórico disponível.</div>
+                <h2 class="text-lg font-bold mb-4">Histórico Mensal</h2>
+                <div id="history-container" class="space-y-3"></div>
             </div>
         </section>
     </main>
 
     <script>
-        // CONFIGURAÇÃO FIREBASE (CHAVES INTEGRADAS)
+        // CONFIGURAÇÃO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyBEJpvsh0A2wFIMINGLJx7L0jrXXLcRizk",
             authDomain: "gamil-inventory.firebaseapp.com",
@@ -118,7 +117,6 @@
             measurementId: "G-E87JYRBDPL"
         };
 
-        // Inicialização
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const bultosRef = db.collection("bultos_gamil");
@@ -127,16 +125,14 @@
         let currentData = {};
         let activeFilter = 'all';
 
-        // ESCUTA EM TEMPO REAL
+        // SINCRONIZAÇÃO EM TEMPO REAL
         bultosRef.onSnapshot((snapshot) => {
             currentData = {};
             snapshot.forEach(doc => currentData[doc.id] = doc.data());
             renderList(activeFilter);
-        }, (error) => {
-            console.error("Erro na sincronização: ", error);
         });
 
-        // CARGA INDUSTRIAL (Fatiamento de 500 em 500)
+        // CARGA INDUSTRIAL COM PAUSA (Fatiamento de 500 em 500)
         async function processImport() {
             const raw = document.getElementById('bultos-input').value;
             const lines = raw.split(/[\n\r,]+/).map(l => l.trim()).filter(l => l !== "");
@@ -145,7 +141,8 @@
             if(uniqueBultos.length === 0) return alert("Erro: Lista vazia.");
 
             const btn = document.getElementById('btn-process');
-            btn.disabled = true; 
+            btn.disabled = true;
+            btn.classList.add('btn-loading');
             
             const chunkSize = 500;
             const totalChunks = Math.ceil(uniqueBultos.length / chunkSize);
@@ -155,7 +152,8 @@
                     const chunk = uniqueBultos.slice(i, i + chunkSize);
                     const batch = db.batch();
                     
-                    btn.innerText = `PROCESSANDO LOTE ${Math.floor(i/chunkSize) + 1} DE ${totalChunks}...`;
+                    const progress = Math.round(((Math.floor(i/chunkSize) + 1) / totalChunks) * 100);
+                    btn.innerText = `SINCRO: ${progress}% (LOTE ${Math.floor(i/chunkSize) + 1} DE ${totalChunks})`;
 
                     chunk.forEach(code => {
                         const ref = bultosRef.doc(code);
@@ -163,18 +161,29 @@
                     });
 
                     await batch.commit();
+                    // PAUSA TÉCNICA: Dá tempo ao navegador para não travar
+                    await new Promise(resolve => setTimeout(resolve, 300));
                 }
 
-                alert(`✅ Sucesso! ${uniqueBultos.length} bultos únicos sincronizados.`);
+                btn.innerText = "✅ SINCRONIZAÇÃO COMPLETA!";
+                btn.style.backgroundColor = "#059669";
+                
+                setTimeout(() => {
+                    alert(`Sucesso: ${uniqueBultos.length} bultos processados.`);
+                    btn.innerText = "SINCRONIZAR COM A NUVEM";
+                    btn.style.backgroundColor = "#2563eb";
+                    btn.disabled = false;
+                    btn.classList.remove('btn-loading');
+                    document.getElementById('bultos-input').value = "";
+                    switchTab('scan');
+                }, 1500);
+
             } catch (error) {
                 console.error(error);
-                alert("Erro ao enviar dados. Verifique a internet.");
+                alert("Erro ao enviar. Verifique se as REGRAS do Firebase foram publicadas como 'if true;'.");
+                btn.disabled = false;
+                btn.innerText = "TENTAR NOVAMENTE";
             }
-
-            btn.disabled = false; 
-            btn.innerText = "SINCRONIZAR COM A NUVEM";
-            document.getElementById('bultos-input').value = "";
-            switchTab('scan');
         }
 
         // LÓGICA PDA
@@ -193,18 +202,18 @@
             
             if (currentData[code]) {
                 if (currentData[code].status === 'ok') {
-                    f.innerText = "⚠️ JÁ CONFERIDO: " + code;
-                    f.classList.add('bg-yellow-500', 'text-white');
+                    f.innerText = "⚠️ JÁ LIDO: " + code;
+                    f.classList.add('bg-amber-500', 'text-white');
                     beep(300, 0.1);
                 } else {
                     await bultosRef.doc(code).update({ status: 'ok', time: new Date().toLocaleString() });
                     f.innerText = "✅ CONFIRMADO: " + code;
-                    f.classList.add('bg-green-500', 'text-white');
+                    f.classList.add('bg-emerald-600', 'text-white');
                     beep(600, 0.1);
                 }
             } else {
-                f.innerText = "❌ DESCONHECIDO: " + code;
-                f.classList.add('bg-red-600', 'text-white');
+                f.innerText = "❌ NÃO CONSTA: " + code;
+                f.classList.add('bg-rose-600', 'text-white');
                 beep(150, 0.5);
             }
         }
@@ -216,20 +225,16 @@
             let counts = { total: 0, ok: 0 };
 
             Object.keys(currentData).sort().reverse().forEach(key => {
-                const item = currentData[key];
                 counts.total++;
+                const item = currentData[key];
                 if(item.status === 'ok') counts.ok++;
                 
                 if(filter !== 'all' && item.status !== filter) return;
 
                 const div = document.createElement('div');
                 div.className = `p-3 flex justify-between items-center ${item.status === 'ok' ? 'row-ok' : 'row-pending'}`;
-                div.innerHTML = `
-                    <span class="text-xs font-bold">${key}</span>
-                    <span class="text-[8px] font-black uppercase px-2 py-1 rounded border ${item.status === 'ok' ? 'border-green-200 text-green-600' : 'border-red-100 text-red-500'}">
-                        ${item.status === 'ok' ? 'OK' : 'FALTA'}
-                    </span>
-                `;
+                div.innerHTML = `<span class="font-bold">${key}</span>
+                                 <span class="text-[9px] font-black uppercase px-2 py-1 rounded border ${item.status === 'ok' ? 'border-emerald-200 text-emerald-600' : 'border-rose-100 text-rose-500'}">${item.status === 'ok' ? 'Lido' : 'Falta'}</span>`;
                 container.appendChild(div);
             });
 
@@ -241,10 +246,10 @@
 
         async function saveSessionToHistory() {
             const picados = Object.keys(currentData).filter(k => currentData[k].status === 'ok');
-            if(picados.length === 0) return alert("Nenhum bulto foi picado.");
-            if(confirm("Deseja fechar o mês e arquivar estes bultos confirmados?")) {
-                await histRef.add({ date: new Date().toLocaleDateString(), total: picados.length, items: picados, ts: Date.now() });
-                alert("Arquivado com sucesso!");
+            if(picados.length === 0) return alert("Nenhum item picado.");
+            if(confirm("Deseja fechar o mês?")) {
+                await histRef.add({ date: new Date().toLocaleDateString(), total: picados.length, ts: Date.now() });
+                alert("Arquivado!");
                 switchTab('history');
             }
         }
@@ -253,50 +258,39 @@
             histRef.orderBy('ts', 'desc').get().then(snap => {
                 const container = document.getElementById('history-container');
                 container.innerHTML = "";
-                if(snap.empty) container.innerHTML = "Nenhum histórico.";
+                if(snap.empty) container.innerHTML = "Vazio.";
                 snap.forEach(doc => {
                     const h = doc.data();
-                    container.innerHTML += `
-                        <div class="p-4 border rounded-xl flex justify-between items-center bg-slate-50 border-slate-200">
-                            <div class="text-left">
-                                <p class="font-bold text-slate-800">Inventário ${h.date}</p>
-                                <p class="text-[10px] text-slate-500 font-bold uppercase">${h.total} BULTOS FÍSICOS</p>
-                            </div>
-                        </div>`;
+                    container.innerHTML += `<div class="p-4 border rounded-xl flex justify-between bg-white shadow-sm mb-2">
+                        <span class="font-bold">${h.date}</span><span class="font-bold text-emerald-600">${h.total} BULTOS</span>
+                    </div>`;
                 });
             });
         }
 
         async function purgeCloud() {
-            if(confirm("TEM CERTEZA? Isso apaga TODOS os bultos da nuvem para começar um novo inventário do zero.")) {
+            if(confirm("⚠️ APAGAR TUDO DA NUVEM?")) {
                 const snap = await bultosRef.get();
                 const batch = db.batch();
                 snap.forEach(doc => batch.delete(doc.ref));
                 await batch.commit();
-                alert("Banco de dados limpo.");
+                alert("Nuvem vazia.");
             }
         }
 
         function switchTab(tab) {
-            ['import', 'scan', 'history'].forEach(t => document.getElementById(`sec-${t}`).classList.add('hidden'));
-            document.getElementById(`sec-${tab}`).classList.remove('hidden');
-            
             ['import', 'scan', 'history'].forEach(t => {
-                document.getElementById(`btn-${t}`).className = 'flex-1 py-3 rounded-lg text-sm font-bold text-slate-500 transition-all';
+                document.getElementById(`sec-${t}`).classList.add('hidden');
+                document.getElementById(`btn-${t}`).className = 'flex-1 py-3 rounded-lg text-sm font-bold text-slate-500';
             });
+            document.getElementById(`sec-${tab}`).classList.remove('hidden');
             document.getElementById(`btn-${tab}`).className = 'flex-1 py-3 rounded-lg text-sm font-bold bg-slate-900 text-white shadow-md';
-            
             if(tab === 'scan') setTimeout(() => pdaInput.focus(), 200);
             if(tab === 'history') renderHistory();
         }
 
         function beep(f, d) {
-            try {
-                const c = new (window.AudioContext || window.webkitAudioContext)();
-                const o = c.createOscillator(); const g = c.createGain();
-                o.connect(g); g.connect(c.destination); o.frequency.value = f;
-                o.start(); setTimeout(() => o.stop(), d * 1000);
-            } catch(e) {}
+            try { const c = new AudioContext(); const o = c.createOscillator(); const g = c.createGain(); o.connect(g); g.connect(c.destination); o.frequency.value = f; o.start(); setTimeout(() => o.stop(), d * 1000); } catch(e) {}
         }
     </script>
 </body>
