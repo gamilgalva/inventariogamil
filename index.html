@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gamil Inventory Pro | v7.1 Cloud</title>
+    <title>Gamil Inventory Pro | v7.3 Professional</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -14,7 +14,7 @@
         body { font-family: 'Inter', sans-serif; }
         .row-ok { border-left: 5px solid #10b981; background-color: #f0fdf4; }
         .row-pending { border-left: 5px solid #ef4444; background-color: #fff; }
-        .progress-transition { transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .progress-transition { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
         .animate-bounce-short { animation: bounce 0.5s ease-in-out 1; }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
     </style>
@@ -25,11 +25,11 @@
         <div class="container mx-auto px-4 py-4 flex justify-between items-center">
             <div>
                 <h1 class="text-xl font-extrabold tracking-tighter text-blue-400">GAMIL <span class="text-white">CLOUD</span></h1>
-                <p class="text-[10px] uppercase tracking-widest opacity-60 font-bold">Gestão de Inventário v7.1 Professional</p>
+                <p class="text-[10px] uppercase tracking-widest opacity-60 font-bold">Gestão de Inventário v7.3</p>
             </div>
             <div id="sync-status" class="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
                 <div id="status-dot" class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                <span class="text-[10px] font-bold text-slate-300 uppercase">Cloud Online</span>
+                <span class="text-[10px] font-bold text-slate-300 uppercase italic">Projeto V2 Ativo</span>
             </div>
         </div>
     </header>
@@ -45,10 +45,10 @@
         <section id="sec-import" class="block space-y-4">
             <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
                 <h2 class="text-lg font-bold mb-1 text-slate-800">Carga Geral de Bultos</h2>
-                <p class="text-xs text-slate-500 mb-4 italic">Fatiamento seguro de 100 em 100 ativado para 8.000+ registros.</p>
+                <p class="text-xs text-slate-500 mb-4 italic">Sistema configurado para 8.000+ bultos com pausa de segurança de 1s.</p>
 
                 <div id="error-console" class="hidden mb-4 p-4 bg-red-100 border-l-4 border-red-600 text-red-800 text-xs font-mono rounded">
-                    <strong>ERRO DE SINCRONIZAÇÃO:</strong> <span id="error-message"></span>
+                    <strong>ERRO:</strong> <span id="error-message"></span>
                 </div>
                 
                 <textarea id="bultos-input" rows="8" 
@@ -57,7 +57,7 @@
                 
                 <div id="progress-container" class="hidden mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
                     <div class="flex justify-between mb-2 text-[10px] font-black text-blue-600 uppercase tracking-widest">
-                        <span id="progress-text">Iniciando...</span>
+                        <span id="progress-text">A preparar sincronização...</span>
                         <span id="progress-percent">0%</span>
                     </div>
                     <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden shadow-inner">
@@ -66,8 +66,8 @@
                 </div>
 
                 <div class="flex flex-col md:flex-row gap-3">
-                    <button id="btn-process" onclick="processImport()" class="flex-[2] bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 transition-all active:scale-95">
-                        SINCRONIZAR COM A NUVEM
+                    <button id="btn-process" onclick="processSafeImport()" class="flex-[2] bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 transition-all active:scale-95">
+                        SINCRONIZAR COM NOVO BANCO
                     </button>
                     <button onclick="purgeCloud()" class="flex-1 bg-red-50 text-red-600 font-bold rounded-xl border border-red-100 hover:bg-red-100 transition-all uppercase text-xs">
                         Limpar Banco
@@ -77,7 +77,7 @@
         </section>
 
         <section id="sec-scan" class="hidden space-y-4">
-            <div class="bg-white rounded-2xl shadow-xl border-4 border-blue-600 p-4">
+            <div class="bg-white rounded-2xl shadow-xl border-4 border-blue-600 p-4 transition-all">
                 <input type="text" id="pda-input" class="w-full p-4 text-3xl text-center font-black bg-slate-50 rounded-xl outline-none" placeholder="SCANNER" autofocus>
                 <div id="pda-feedback" class="hidden mt-4 p-4 rounded-xl text-center font-bold text-lg animate-bounce-short"></div>
             </div>
@@ -88,11 +88,11 @@
                     <span id="count-total" class="text-xl font-black text-slate-800">0</span>
                 </div>
                 <div class="bg-emerald-600 p-4 rounded-xl text-white text-center shadow-md">
-                    <span class="text-[9px] font-bold opacity-80 uppercase block font-bold">Picados</span>
+                    <span class="text-[9px] font-bold opacity-80 uppercase block font-bold uppercase">Picados</span>
                     <span id="count-scanned" class="text-xl font-black">0</span>
                 </div>
                 <div class="bg-rose-500 p-4 rounded-xl text-white text-center shadow-md">
-                    <span class="text-[9px] font-bold opacity-80 uppercase block font-bold">Faltam</span>
+                    <span class="text-[9px] font-bold opacity-80 uppercase block font-bold uppercase">Faltam</span>
                     <span id="count-missing" class="text-xl font-black">0</span>
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-slate-200 text-center shadow-sm">
@@ -107,29 +107,30 @@
                         <button onclick="renderList('all')" class="px-3 py-1.5 text-[10px] font-bold rounded bg-white border shadow-sm">TUDO</button>
                         <button onclick="renderList('pending')" class="px-3 py-1.5 text-[10px] font-bold rounded bg-white border text-red-500 shadow-sm uppercase">Pendente</button>
                     </div>
-                    <button onclick="saveSessionToHistory()" class="bg-slate-800 text-white text-[10px] px-4 py-2 rounded-lg font-bold hover:bg-black transition-all uppercase">Fechar Inventário</button>
+                    <button onclick="saveSessionToHistory()" class="bg-slate-800 text-white text-[10px] px-4 py-2 rounded-lg font-bold hover:bg-black transition-all uppercase">Fechar Mês</button>
                 </div>
                 <div id="inventory-list" class="max-h-[450px] overflow-y-auto divide-y divide-slate-100 font-mono text-sm italic"></div>
             </div>
         </section>
 
-        <section id="sec-history" class="hidden space-y-4">
-            <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 text-center">
-                <h2 class="text-lg font-bold mb-4 text-slate-800">Arquivos de Inventário</h2>
+        <section id="sec-history" class="hidden space-y-4 text-center">
+            <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+                <h2 class="text-lg font-bold mb-4 text-slate-800 font-bold uppercase text-xs tracking-widest">Arquivos de Inventário</h2>
                 <div id="history-container" class="space-y-3"></div>
             </div>
         </section>
     </main>
 
     <script>
-        // CONFIGURAÇÃO FIREBASE
+        // CONFIGURAÇÃO FIREBASE (PROJETO IVENTARIOG2)
         const firebaseConfig = {
-            apiKey: "AIzaSyBEJpvsh0A2wFIMINGLJx7L0jrXXLcRizk",
-            authDomain: "gamil-inventory.firebaseapp.com",
-            projectId: "gamil-inventory",
-            storageBucket: "gamil-inventory.firebasestorage.app",
-            messagingSenderId: "1057783338000",
-            appId: "1:1057783338000:web:09d77f4736d2416bd42695"
+            apiKey: "AIzaSyBKX8PGxZYyxhIUyAcWs4PK32zywpMnNE",
+            authDomain: "iventariog2.firebaseapp.com",
+            projectId: "iventariog2",
+            storageBucket: "iventariog2.firebasestorage.app",
+            messagingSenderId: "457215099810",
+            appId: "1:457215099810:web:438eb2f75ec3fcdc5aa8fb",
+            measurementId: "G-TKLR7373KJ"
         };
 
         firebase.initializeApp(firebaseConfig);
@@ -140,19 +141,18 @@
         let inventory = {};
         let activeFilter = 'all';
 
-        // SINCRONIZAÇÃO REALTIME
+        // SINCRONIZAÇÃO EM TEMPO REAL
         bultosRef.onSnapshot((snap) => {
             inventory = {};
             snap.forEach(doc => inventory[doc.id] = doc.data());
             renderList(activeFilter);
         }, (err) => {
-            const errConsole = document.getElementById('error-console');
-            errConsole.classList.remove('hidden');
+            document.getElementById('error-console').classList.remove('hidden');
             document.getElementById('error-message').innerText = "Erro Realtime: " + err.message;
         });
 
-        // MOTOR DE CARGA v7.1 (Lote 100)
-        async function processImport() {
+        // MOTOR DE CARGA v7.3 (Lote 100 + 1s Delay)
+        async function processSafeImport() {
             const raw = document.getElementById('bultos-input').value;
             const bultos = [...new Set(raw.split(/[\n\r,]+/).map(l => l.trim()).filter(l => l !== ""))];
             if(bultos.length === 0) return alert("Erro: Lista vazia.");
@@ -165,11 +165,11 @@
             const errConsole = document.getElementById('error-console');
 
             btn.disabled = true;
-            btn.innerText = "Trabalhando...";
+            btn.innerText = "Sincronizando...";
             progCont.classList.remove('hidden');
             errConsole.classList.add('hidden');
 
-            const chunkSize = 100; // Segurança Máxima
+            const chunkSize = 100;
             const total = bultos.length;
 
             try {
@@ -187,16 +187,16 @@
                     const pct = Math.round((atual / total) * 100);
                     progFill.style.width = pct + "%";
                     progPercent.innerText = pct + "%";
-                    progText.innerText = `Sincronizando ${atual} de ${total} bultos...`;
+                    progText.innerText = `Enviando ${atual} de ${total} bultos...`;
                     
-                    // Pausa técnica para evitar bloqueios do servidor
-                    await new Promise(r => setTimeout(r, 300));
+                    // Pausa técnica de 1 segundo para evitar bloqueio de quota do Firebase
+                    await new Promise(r => setTimeout(r, 1000));
                 }
 
-                alert(`✅ ${total} bultos processados!`);
+                alert(`✅ ${total} bultos processados com sucesso no iventariog2!`);
                 progCont.classList.add('hidden');
                 btn.disabled = false;
-                btn.innerText = "SINCRONIZAR COM A NUVEM";
+                btn.innerText = "SINCRONIZAR COM NOVO BANCO";
                 document.getElementById('bultos-input').value = "";
                 switchTab('scan');
 
@@ -283,13 +283,13 @@
         function renderHistory() {
             histRef.orderBy('ts', 'desc').get().then(snap => {
                 const container = document.getElementById('history-container');
-                container.innerHTML = snap.empty ? '<p class="text-slate-400 italic">Nenhum registro.</p>' : "";
+                container.innerHTML = snap.empty ? '<p class="text-slate-400 italic">Nenhum registo histórico disponível.</p>' : "";
                 snap.forEach(doc => {
                     const h = doc.data();
                     container.innerHTML += `
                         <div class="p-4 bg-white border rounded-xl flex justify-between items-center shadow-sm">
                             <span class="font-bold text-slate-700">Inventário de ${h.date}</span>
-                            <span class="font-bold text-emerald-600 text-[10px] uppercase">${h.total} bultos</span>
+                            <span class="font-bold text-emerald-600 text-[10px] uppercase">${h.total} bultos picados</span>
                         </div>`;
                 });
             });
@@ -301,6 +301,7 @@
                 const batch = db.batch();
                 snap.forEach(d => batch.delete(d.ref));
                 await batch.commit();
+                alert("Nuvem limpa!");
             }
         }
 
