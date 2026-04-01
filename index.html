@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gamil Inventory Pro | v7.0 Full Cloud</title>
+    <title>Gamil Inventory Pro | v7.1 Cloud</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -25,7 +25,7 @@
         <div class="container mx-auto px-4 py-4 flex justify-between items-center">
             <div>
                 <h1 class="text-xl font-extrabold tracking-tighter text-blue-400">GAMIL <span class="text-white">CLOUD</span></h1>
-                <p class="text-[10px] uppercase tracking-widest opacity-60 font-bold text-balance">Gestão de Inventário v7.0 Professional</p>
+                <p class="text-[10px] uppercase tracking-widest opacity-60 font-bold">Gestão de Inventário v7.1 Professional</p>
             </div>
             <div id="sync-status" class="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
                 <div id="status-dot" class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
@@ -45,11 +45,10 @@
         <section id="sec-import" class="block space-y-4">
             <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
                 <h2 class="text-lg font-bold mb-1 text-slate-800">Carga Geral de Bultos</h2>
-                <p class="text-xs text-slate-500 mb-4 italic">Sistema fatiador ativado para suportar 8.000+ registros.</p>
+                <p class="text-xs text-slate-500 mb-4 italic">Fatiamento seguro de 100 em 100 ativado para 8.000+ registros.</p>
 
                 <div id="error-console" class="hidden mb-4 p-4 bg-red-100 border-l-4 border-red-600 text-red-800 text-xs font-mono rounded">
                     <strong>ERRO DE SINCRONIZAÇÃO:</strong> <span id="error-message"></span>
-                    <p class="mt-2 text-[10px] opacity-75 italic">Dica: Verifique se as 'Rules' do Firebase estão como 'allow read, write: if true;'.</p>
                 </div>
                 
                 <textarea id="bultos-input" rows="8" 
@@ -58,7 +57,7 @@
                 
                 <div id="progress-container" class="hidden mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
                     <div class="flex justify-between mb-2 text-[10px] font-black text-blue-600 uppercase tracking-widest">
-                        <span id="progress-text">Processando bultos...</span>
+                        <span id="progress-text">Iniciando...</span>
                         <span id="progress-percent">0%</span>
                     </div>
                     <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden shadow-inner">
@@ -89,11 +88,11 @@
                     <span id="count-total" class="text-xl font-black text-slate-800">0</span>
                 </div>
                 <div class="bg-emerald-600 p-4 rounded-xl text-white text-center shadow-md">
-                    <span class="text-[9px] font-bold opacity-80 uppercase block font-bold uppercase">Picados</span>
+                    <span class="text-[9px] font-bold opacity-80 uppercase block font-bold">Picados</span>
                     <span id="count-scanned" class="text-xl font-black">0</span>
                 </div>
                 <div class="bg-rose-500 p-4 rounded-xl text-white text-center shadow-md">
-                    <span class="text-[9px] font-bold opacity-80 uppercase block font-bold uppercase">Faltam</span>
+                    <span class="text-[9px] font-bold opacity-80 uppercase block font-bold">Faltam</span>
                     <span id="count-missing" class="text-xl font-black">0</span>
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-slate-200 text-center shadow-sm">
@@ -141,17 +140,18 @@
         let inventory = {};
         let activeFilter = 'all';
 
-        // SINCRONIZAÇÃO EM TEMPO REAL
+        // SINCRONIZAÇÃO REALTIME
         bultosRef.onSnapshot((snap) => {
             inventory = {};
             snap.forEach(doc => inventory[doc.id] = doc.data());
             renderList(activeFilter);
         }, (err) => {
-            document.getElementById('error-console').classList.remove('hidden');
-            document.getElementById('error-message').innerText = "Erro ao conectar: " + err.message;
+            const errConsole = document.getElementById('error-console');
+            errConsole.classList.remove('hidden');
+            document.getElementById('error-message').innerText = "Erro Realtime: " + err.message;
         });
 
-        // MOTOR DE CARGA INDUSTRIAL
+        // MOTOR DE CARGA v7.1 (Lote 100)
         async function processImport() {
             const raw = document.getElementById('bultos-input').value;
             const bultos = [...new Set(raw.split(/[\n\r,]+/).map(l => l.trim()).filter(l => l !== ""))];
@@ -169,7 +169,7 @@
             progCont.classList.remove('hidden');
             errConsole.classList.add('hidden');
 
-            const chunkSize = 400; 
+            const chunkSize = 100; // Segurança Máxima
             const total = bultos.length;
 
             try {
@@ -189,10 +189,11 @@
                     progPercent.innerText = pct + "%";
                     progText.innerText = `Sincronizando ${atual} de ${total} bultos...`;
                     
-                    await new Promise(r => setTimeout(r, 200));
+                    // Pausa técnica para evitar bloqueios do servidor
+                    await new Promise(r => setTimeout(r, 300));
                 }
 
-                alert(`✅ Processado com sucesso!`);
+                alert(`✅ ${total} bultos processados!`);
                 progCont.classList.add('hidden');
                 btn.disabled = false;
                 btn.innerText = "SINCRONIZAR COM A NUVEM";
@@ -202,7 +203,7 @@
             } catch (e) {
                 console.error(e);
                 errConsole.classList.remove('hidden');
-                document.getElementById('error-message').innerText = e.message;
+                document.getElementById('error-message').innerText = "Erro na Carga: " + e.message;
                 btn.disabled = false;
                 btn.innerText = "TENTAR NOVAMENTE";
             }
@@ -246,7 +247,7 @@
                 div.innerHTML = `
                     <span class="font-bold text-xs">${key}</span>
                     <span class="text-[9px] font-black uppercase px-2 py-1 rounded border ${inventory[key].s === 'ok' ? 'border-emerald-200 text-emerald-600' : 'border-rose-100 text-rose-500'}">
-                        ${inventory[key].s === 'ok' ? 'Lido ' + inventory[key].t : 'Faltante'}
+                        ${inventory[key].s === 'ok' ? 'Lido ' + inventory[key].t : 'Pendente'}
                     </span>`;
                 container.appendChild(div);
             });
@@ -271,8 +272,8 @@
 
         async function saveSessionToHistory() {
             const okTotal = Object.keys(inventory).filter(k => inventory[k].s === 'ok').length;
-            if(okTotal === 0) return alert("Nada para arquivar.");
-            if(confirm(`Arquivar inventário com ${okTotal} itens?`)) {
+            if(okTotal === 0) return alert("Nada picado.");
+            if(confirm(`Arquivar inventário com ${okTotal} bultos?`)) {
                 await histRef.add({ date: new Date().toLocaleDateString(), total: okTotal, ts: Date.now() });
                 alert("Arquivado!");
                 switchTab('history');
@@ -288,19 +289,18 @@
                     container.innerHTML += `
                         <div class="p-4 bg-white border rounded-xl flex justify-between items-center shadow-sm">
                             <span class="font-bold text-slate-700">Inventário de ${h.date}</span>
-                            <span class="font-bold text-emerald-600 text-[10px] uppercase">${h.total} bultos picados</span>
+                            <span class="font-bold text-emerald-600 text-[10px] uppercase">${h.total} bultos</span>
                         </div>`;
                 });
             });
         }
 
         async function purgeCloud() {
-            if(confirm("Apagar todos os bultos para novo carregamento?")) {
+            if(confirm("Apagar todos os bultos da nuvem?")) {
                 const snap = await bultosRef.get();
                 const batch = db.batch();
                 snap.forEach(d => batch.delete(d.ref));
                 await batch.commit();
-                alert("Nuvem limpa!");
             }
         }
 
