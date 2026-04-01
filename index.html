@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gamil Inventory Cloud | v4.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .row-ok { border-left: 5px solid #10b981; background-color: #f0fdf4; }
+        .row-pending { border-left: 5px solid #ef4444; background-color: #fff; }
+        .pda-input-focus:focus { ring: 4px; ring-color: #3b82f6; border-color: #3b82f6; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen pb-10">
+
+    <header class="bg-slate-900 text-white shadow-xl sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-extrabold tracking-tighter text-blue-400">GAMIL <span class="text-white">CLOUD</span></h1>
+                <p class="text-[10px] uppercase tracking-widest opacity-60">Sincronização em Tempo Real (Porto/Braga)</p>
+            </div>
+            <div id="sync-status" class="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span class="text-[10px] font-bold text-slate-300 uppercase">Conectado</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-6 max-w-4xl">
+        <nav class="flex bg-white rounded-xl p-1 shadow-sm mb-6 border border-slate-200">
+            <button onclick="switchTab('import')" id="btn-import" class="flex-1 py-3 rounded-lg text-sm font-bold bg-slate-900 text-white transition-all">1. CARGA EXCEL</button>
+            <button onclick="switchTab('scan')" id="btn-scan" class="flex-1 py-3 rounded-lg text-sm font-bold text-slate-500 transition-all">2. MODO PDA</button>
+            <button onclick="switchTab('history')" id="btn-history" class="flex-1 py-3 rounded-lg text-sm font-bold text-slate-500 transition-all">3. HISTÓRICO</button>
+        </nav>
+
+        <section id="sec-import" class="block space-y-4">
+            <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+                <h2 class="text-lg font-bold mb-2">Carga Geral (Abbas)</h2>
+                <p class="text-xs text-slate-500 mb-4 italic">O sistema filtrará duplicados automaticamente antes de enviar para a nuvem.</p>
+                <textarea id="bultos-input" rows="8" class="w-full p-4 border-2 border-slate-100 rounded-xl bg-slate-50 font-mono text-xs mb-4 focus:border-blue-500 outline-none" placeholder="Cole a coluna do Excel aqui..."></textarea>
+                <div class="flex gap-2">
+                    <button id="btn-process" onclick="processImport()" class="flex-[2] bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 disabled:bg-slate-400">
+                        SINCRONIZAR COM A NUVEM
+                    </button>
+                    <button onclick="purgeCloud()" class="flex-1 bg-red-50 text-red-600 font-bold rounded-xl border border-red-100 hover:bg-red-100">
+                        LIMPAR NUVEM
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-scan" class="hidden space-y-4">
+            <div class="bg-white rounded-2xl shadow-xl border-4 border-blue-600 p-4">
+                <input type="text" id="pda-input" class="w-full p-4 text-3xl text-center font-black bg-slate-50 rounded-xl outline-none" placeholder="LEITURA DO BULTO" autofocus>
+                <div id="pda-feedback" class="hidden mt-4 p-4 rounded-xl text-center font-bold text-lg animate-bounce"></div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 text-center">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase block">Lista Única</span>
+                    <span id="count-total" class="text-xl font-black">0</span>
+                </div>
+                <div class="bg-emerald-600 p-4 rounded-xl text-white text-center shadow-md">
+                    <span class="text-[9px] font-bold opacity-80 uppercase block">Confirmados</span>
+                    <span id="count-scanned" class="text-xl font-black">0</span>
+                </div>
+                <div class="bg-rose-500 p-4 rounded-xl text-white text-center shadow-md">
+                    <span class="text-[9px] font-bold opacity-80 uppercase block">Faltantes</span>
+                    <span id="count-missing" class="text-xl font-black">0</span>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 text-center">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase block">Acuracidade</span>
+                    <span id="count-percent" class="text-xl font-black">0%</span>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+                <div class="p-3 bg-amber-50 border-b border-amber-100 flex justify-between items-center">
+                    <span class="text-[10px] font-bold text-amber-800 uppercase">Saneamento de Inventário:</span>
+                    <button onclick="saveSessionToHistory()" class="bg-slate-800 text-white text-[10px] px-3 py-2 rounded font-bold uppercase">Arquivar Mês Atual</button>
+                </div>
+                <div class="p-4 flex gap-2 border-b bg-slate-50">
+                    <button onclick="renderList('all')" class="px-3 py-1.5 text-[10px] font-bold rounded bg-white border">VER TUDO</button>
+                    <button onclick="renderList('pending')" class="px-3 py-1.5 text-[10px] font-bold rounded bg-white border text-red-500">APENAS FALTANTES</button>
+                </div>
+                <div id="inventory-list" class="max-h-[400px] overflow-y-auto divide-y divide-slate-100 font-mono"></div>
+            </div>
+        </section>
+
+        <section id="sec-history" class="hidden space-y-4">
+            <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+                <h2 class="text-lg font-bold mb-4">Arquivos de Inventários</h2>
+                <div id="history-container" class="space-y-3"></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // CONFIGURAÇÃO FIREBASE (Suas chaves integradas)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBEJpvsh0A2wFIMINGLJx7L0jrXXLcRizk",
+            authDomain: "gamil-inventory.firebaseapp.com",
+            projectId: "gamil-inventory",
+            storageBucket: "gamil-inventory.firebasestorage.app",
+            messagingSenderId: "1057783338000",
+            appId: "1:1057783338000:web:09d77f4736d2416bd42695",
+            measurementId: "G-E87JYRBDPL"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const bultosRef = db.collection("bultos_gamil");
+        const histRef = db.collection("historico_gamil");
+
+        let currentData = {};
+
+        // ESCUTA EM TEMPO REAL
+        bultosRef.onSnapshot((snapshot) => {
+            currentData = {};
+            snapshot.forEach(doc => currentData[doc.id] = doc.data());
+            renderList('all');
+        });
+
+        // IMPORTAR COM REMOÇÃO DE DUPLICADOS
+        async function processImport() {
+            const raw = document.getElementById('bultos-input').value;
+            const lines = raw.split(/[\n\r,]+/).map(l => l.trim()).filter(l => l !== "");
+            const uniqueBultos = [...new Set(lines)];
+
+            if(uniqueBultos.length === 0) return alert("Erro: Lista vazia.");
+
+            const btn = document.getElementById('btn-process');
+            btn.disabled = true; btn.innerText = "SINCRONIZANDO...";
+
+            const batch = db.batch();
+            uniqueBultos.forEach(code => {
+                const ref = bultosRef.doc(code);
+                batch.set(ref, { status: 'pending', time: null }, { merge: true });
+            });
+
+            await batch.commit();
+            alert(`Processado: ${lines.length} linhas. Únicos: ${uniqueBultos.length} bultos.`);
+            btn.disabled = false; btn.innerText = "SINCRONIZAR COM A NUVEM";
+            document.getElementById('bultos-input').value = "";
+            switchTab('scan');
+        }
+
+        // LÓGICA PDA
+        const pdaInput = document.getElementById('pda-input');
+        pdaInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                const code = pdaInput.value.trim();
+                if(code) await validateScan(code);
+                pdaInput.value = "";
+            }
+        });
+
+        async function validateScan(code) {
+            const f = document.getElementById('pda-feedback');
+            f.className = "mt-4 p-4 rounded-xl text-center font-bold text-lg block";
+            
+            if (currentData[code]) {
+                if (currentData[code].status === 'ok') {
+                    f.innerText = "⚠️ JÁ CONFERIDO: " + code;
+                    f.classList.add('bg-yellow-500', 'text-white');
+                    beep(300, 0.1);
+                } else {
+                    await bultosRef.doc(code).update({ status: 'ok', time: new Date().toLocaleString() });
+                    f.innerText = "✅ CONFIRMADO: " + code;
+                    f.classList.add('bg-green-500', 'text-white');
+                    beep(600, 0.1);
+                }
+            } else {
+                f.innerText = "❌ DESCONHECIDO: " + code;
+                f.classList.add('bg-red-600', 'text-white');
+                beep(150, 0.5);
+            }
+        }
+
+        function renderList(filter) {
+            const container = document.getElementById('inventory-list');
+            container.innerHTML = "";
+            let counts = { total: 0, ok: 0 };
+
+            Object.keys(currentData).sort().reverse().forEach(key => {
+                counts.total++;
+                if(currentData[key].status === 'ok') counts.ok++;
+                if(filter !== 'all' && currentData[key].status !== filter) return;
+
+                const div = document.createElement('div');
+                div.className = `p-3 flex justify-between items-center ${currentData[key].status === 'ok' ? 'row-ok' : 'row-pending'}`;
+                div.innerHTML = `<span class="text-xs font-bold font-mono">${key}</span>
+                                 <span class="text-[9px] font-black uppercase">${currentData[key].status === 'ok' ? 'Lido' : 'Falta'}</span>`;
+                container.appendChild(div);
+            });
+
+            document.getElementById('count-total').innerText = counts.total;
+            document.getElementById('count-scanned').innerText = counts.ok;
+            document.getElementById('count-missing').innerText = counts.total - counts.ok;
+            document.getElementById('count-percent').innerText = counts.total > 0 ? Math.round((counts.ok / counts.total)*100) + "%" : "0%";
+        }
+
+        async function saveSessionToHistory() {
+            const picados = Object.keys(currentData).filter(k => currentData[k].status === 'ok');
+            if(picados.length === 0) return alert("Nada picado ainda.");
+            if(confirm("Deseja arquivar este inventário?")) {
+                await histRef.add({ date: new Date().toLocaleDateString(), total: picados.length, items: picados, ts: Date.now() });
+                alert("Arquivado com sucesso!");
+                switchTab('history');
+            }
+        }
+
+        function renderHistory() {
+            histRef.orderBy('ts', 'desc').get().then(snap => {
+                const container = document.getElementById('history-container');
+                container.innerHTML = "";
+                snap.forEach(doc => {
+                    const h = doc.data();
+                    container.innerHTML += `<div class="p-4 border rounded-xl flex justify-between items-center bg-slate-50">
+                        <div><p class="font-bold">${h.date}</p><p class="text-[10px] text-slate-500">${h.total} BULTOS FÍSICOS</p></div>
+                    </div>`;
+                });
+            });
+        }
+
+        async function purgeCloud() {
+            if(confirm("LIMPAR TODA A NUVEM? Isso apaga tudo para um novo inventário.")) {
+                const snap = await bultosRef.get();
+                const batch = db.batch();
+                snap.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+            }
+        }
+
+        function switchTab(tab) {
+            ['import', 'scan', 'history'].forEach(t => document.getElementById(`sec-${t}`).classList.add('hidden'));
+            document.getElementById(`sec-${tab}`).classList.remove('hidden');
+            if(tab === 'scan') setTimeout(() => pdaInput.focus(), 200);
+            if(tab === 'history') renderHistory();
+        }
+
+        function beep(f, d) {
+            const c = new AudioContext(); const o = c.createOscillator(); const g = c.createGain();
+            o.connect(g); g.connect(c.destination); o.frequency.value = f; o.start(); setTimeout(() => o.stop(), d * 1000);
+        }
+    </script>
+</body>
+</html>
