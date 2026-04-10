@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gamil Inventory Pro | v9.0 Local Load</title>
+    <title>Gamil Inventory Pro | v9.1 Hybrid Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -16,59 +16,82 @@
         .row-ok { border-left: 5px solid #10b981; background-color: #f0fdf4; }
         .row-pending { border-left: 5px solid #ef4444; background-color: #fff; }
         @media print {
-            .no-print { display: none !important; }
-            body { background-color: white !important; }
+            header, nav, .no-print, button, #pda-input { display: none !important; }
+            body { background-color: white !important; padding: 0 !important; }
             #inventory-list { max-height: none !important; overflow: visible !important; }
+            .shadow-xl, .shadow-md { box-shadow: none !important; border: 1px solid #eee !important; }
         }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen pb-10">
+<body class="bg-slate-100 min-h-screen pb-10 text-slate-900">
 
-    <header class="bg-slate-900 text-white p-4 shadow-xl no-print">
-        <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-black text-blue-400">GAMIL <span class="text-white">CLOUD v9</span></h1>
-            <div class="text-[10px] bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
-                LISTA LOCAL: <span id="local-count" class="text-blue-400 font-bold">0</span> BULTOS
+    <header class="bg-slate-900 text-white shadow-xl sticky top-0 z-50 no-print">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-extrabold tracking-tighter text-blue-400">GAMIL <span class="text-white">CLOUD</span></h1>
+                <p class="text-[10px] uppercase tracking-widest opacity-60 font-bold italic">Base Local: <span id="local-qty">0</span> Bultos</p>
+            </div>
+            <div id="sync-status" class="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+                <div id="status-dot" class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span class="text-[10px] font-bold text-slate-300 uppercase italic">Híbrido Ativo</span>
             </div>
         </div>
     </header>
 
     <main class="container mx-auto px-4 py-6 max-w-4xl">
         
-        <div class="bg-white rounded-2xl shadow-xl border-4 border-blue-600 p-4 mb-6 no-print">
-            <input type="text" id="pda-input" class="w-full p-4 text-3xl text-center font-black bg-slate-50 rounded-xl outline-none" placeholder="SCANNER PDA" autofocus>
-            <div id="pda-feedback" class="hidden mt-4 p-4 rounded-xl text-center font-bold text-lg"></div>
-        </div>
+        <nav class="flex bg-white rounded-xl p-1 shadow-sm mb-6 border border-slate-200 no-print">
+            <button onclick="switchTab('scan')" id="btn-scan" class="flex-1 py-3 rounded-lg text-sm font-bold bg-slate-900 text-white transition-all uppercase">1. MODO PDA</button>
+            <button onclick="switchTab('history')" id="btn-history" class="flex-1 py-3 rounded-lg text-sm font-bold text-slate-500 transition-all uppercase">2. HISTÓRICO</button>
+        </nav>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 no-print">
-            <div class="bg-white p-3 rounded-xl border border-slate-200 text-center shadow-sm">
-                <span class="text-[9px] font-bold text-slate-400 uppercase block">No Ficheiro</span>
-                <span id="count-total" class="text-xl font-black text-slate-800">0</span>
+        <section id="sec-scan" class="block space-y-4">
+            <div class="bg-white rounded-2xl shadow-xl border-4 border-blue-600 p-4 no-print">
+                <input type="text" id="pda-input" class="w-full p-4 text-3xl text-center font-black bg-slate-50 rounded-xl outline-none" placeholder="SCANNER" autofocus>
+                <div id="pda-feedback" class="hidden mt-4 p-4 rounded-xl text-center font-bold text-lg"></div>
             </div>
-            <div class="bg-emerald-600 p-3 rounded-xl text-white text-center shadow-md">
-                <span class="text-[9px] font-bold opacity-80 uppercase block">Picados Hoje</span>
-                <span id="count-scanned" class="text-xl font-black">0</span>
-            </div>
-            <div class="bg-rose-500 p-3 rounded-xl text-white text-center shadow-md">
-                <span class="text-[9px] font-bold opacity-80 uppercase block">Faltam</span>
-                <span id="count-missing" class="text-xl font-black">0</span>
-            </div>
-            <div class="bg-white p-3 rounded-xl border border-slate-200 text-center shadow-sm">
-                <span class="text-[9px] font-bold text-slate-400 uppercase block">Acuracidade</span>
-                <span id="count-percent" class="text-xl font-black text-slate-800">0%</span>
-            </div>
-        </div>
 
-        <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
-            <div class="p-3 bg-slate-50 border-b flex justify-between items-center no-print">
-                <div class="flex gap-1">
-                    <button onclick="renderList('all')" class="px-3 py-1.5 text-[10px] font-bold rounded bg-white border shadow-sm uppercase">Tudo</button>
-                    <button onclick="renderList('pending')" class="px-3 py-1.5 text-[10px] font-bold rounded bg-white border text-red-500 shadow-sm uppercase">Faltam (Baixa)</button>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 no-print">
+                <div class="bg-white p-3 rounded-xl border border-slate-200 text-center shadow-sm">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase block">No Ficheiro</span>
+                    <span id="count-total" class="text-xl font-black text-slate-800">0</span>
                 </div>
-                <button onclick="window.print()" class="bg-slate-800 text-white text-[10px] px-4 py-2 rounded-lg font-bold uppercase">🖨️ Imprimir Relatório</button>
+                <div class="bg-emerald-600 p-3 rounded-xl text-white text-center shadow-md">
+                    <span class="text-[9px] font-bold opacity-80 uppercase block font-bold uppercase">Lidos</span>
+                    <span id="count-scanned" class="text-xl font-black">0</span>
+                </div>
+                <div class="bg-rose-500 p-3 rounded-xl text-white text-center shadow-md">
+                    <span class="text-[9px] font-bold opacity-80 uppercase block font-bold uppercase">Faltam</span>
+                    <span id="count-missing" class="text-xl font-black">0</span>
+                </div>
+                <div class="bg-white p-3 rounded-xl border border-slate-200 text-center shadow-sm">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase block">Acuracidade</span>
+                    <span id="count-percent" class="text-xl font-black text-slate-800">0%</span>
+                </div>
             </div>
-            <div id="inventory-list" class="max-h-[600px] overflow-y-auto divide-y divide-slate-100 font-mono text-sm"></div>
-        </div>
+
+            <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+                <div class="p-3 bg-slate-50 border-b flex justify-between items-center no-print">
+                    <div class="flex gap-1">
+                        <button onclick="renderList('all')" class="px-3 py-1.5 text-[10px] font-bold rounded bg-white border shadow-sm uppercase">Tudo</button>
+                        <button onclick="renderList('ok')" class="px-3 py-1.5 text-[10px] font-bold rounded bg-white border text-emerald-600 shadow-sm uppercase">Lidos</button>
+                        <button onclick="renderList('pending')" class="px-3 py-1.5 text-[10px] font-bold rounded bg-white border text-red-500 shadow-sm uppercase">Fantasmas</button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="window.print()" class="bg-blue-600 text-white text-[10px] px-4 py-2 rounded-lg font-bold uppercase">🖨️ Imprimir</button>
+                        <button onclick="saveSessionToHistory()" class="bg-slate-800 text-white text-[10px] px-4 py-2 rounded-lg font-bold uppercase">Fechar Mês</button>
+                    </div>
+                </div>
+                <div id="inventory-list" class="max-h-[500px] overflow-y-auto divide-y divide-slate-100 font-mono text-sm italic"></div>
+            </div>
+        </section>
+
+        <section id="sec-history" class="hidden space-y-4 text-center no-print">
+            <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+                <h2 class="text-lg font-bold mb-4 text-slate-800 uppercase text-xs tracking-widest">Registos de Fechamento</h2>
+                <div id="history-container" class="space-y-3"></div>
+            </div>
+        </section>
     </main>
 
     <script>
@@ -84,50 +107,43 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const picagensRef = db.collection("picagens_diarias");
+        const picagensRef = db.collection("picagens_v9");
+        const histRef = db.collection("historico_gamil");
         
-        let lidosNaBase = {}; // Só bultos que foram picados no Firebase
+        let lidosNoFirebase = {}; 
         let activeFilter = 'all';
 
-        // 1. CARREGAR DADOS DO FICHEIRO DADOS.JS
-        document.getElementById('local-count').innerText = listaBultosOFICIAL.length;
+        // Carrega contagem inicial do dados.js
+        document.getElementById('local-qty').innerText = listaBultosOFICIAL.length;
         document.getElementById('count-total').innerText = listaBultosOFICIAL.length;
 
-        // 2. ESCUTAR APENAS AS PICAGENS (Economia de Leituras!)
-        // Ele lê apenas os documentos que foram criados hoje ou recentemente
+        // Escuta picagens em tempo real
         picagensRef.onSnapshot((snap) => {
-            lidosNaBase = {};
-            snap.forEach(doc => { lidosNaBase[doc.id] = doc.data(); });
+            lidosNoFirebase = {};
+            snap.forEach(doc => lidosNoFirebase[doc.id] = doc.data());
             renderList(activeFilter);
         });
 
-        // 3. VALIDAR PICAGEM
         async function validate(code) {
-            const feedback = document.getElementById('pda-feedback');
-            feedback.className = "mt-4 p-4 rounded-xl text-center font-bold text-lg block";
+            const f = document.getElementById('pda-feedback');
+            f.className = "mt-4 p-4 rounded-xl text-center font-bold text-lg block animate-bounce-short";
             
-            // Verifica se o código existe na lista do dados.js
             const existeNoFicheiro = listaBultosOFICIAL.includes(code);
 
             if (existeNoFicheiro) {
-                if (lidosNaBase[code]) {
-                    feedback.innerText = "⚠️ JÁ FOI PICADO: " + code;
-                    feedback.classList.add('bg-amber-500', 'text-white');
+                if (lidosNoFirebase[code]) {
+                    f.innerText = "⚠️ JÁ CONFERIDO: " + code;
+                    f.classList.add('bg-amber-500', 'text-white');
                     beep(300, 0.1);
                 } else {
-                    // Grava no Firebase (Aqui gasta 1 escrita)
-                    await picagensRef.doc(code).set({
-                        t: new Date().toLocaleTimeString('pt-PT'),
-                        data: new Date().toLocaleDateString('pt-PT'),
-                        user: 'Hamilton'
-                    });
-                    feedback.innerText = "✅ OK: " + code;
-                    feedback.classList.add('bg-emerald-600', 'text-white');
+                    await picagensRef.doc(code).set({ t: new Date().toLocaleTimeString() });
+                    f.innerText = "✅ OK: " + code;
+                    f.classList.add('bg-emerald-600', 'text-white');
                     beep(600, 0.1);
                 }
             } else {
-                feedback.innerText = "❌ NÃO CONSTA NO FICHEIRO: " + code;
-                feedback.classList.add('bg-rose-600', 'text-white');
+                f.innerText = "❌ NÃO CONSTA NO FICHEIRO: " + code;
+                f.classList.add('bg-rose-600', 'text-white');
                 beep(150, 0.5);
             }
         }
@@ -136,28 +152,74 @@
             activeFilter = filter;
             const container = document.getElementById('inventory-list');
             container.innerHTML = "";
-            let picadosCount = 0;
+            let picados = 0;
 
             listaBultosOFICIAL.sort().forEach(key => {
-                const isPicado = lidosNaBase[key];
-                if (isPicado) picadosCount++;
+                const info = lidosNoFirebase[key];
+                if(info) picados++;
 
-                if (filter === 'pending' && isPicado) return;
+                if(filter === 'pending' && info) return;
+                if(filter === 'ok' && !info) return;
 
                 const div = document.createElement('div');
-                div.className = `p-3 flex justify-between items-center ${isPicado ? 'row-ok' : 'row-pending'}`;
+                div.className = `p-3 flex justify-between items-center ${info ? 'row-ok' : 'row-pending'}`;
                 div.innerHTML = `
                     <span class="font-bold text-xs">${key}</span>
-                    <span class="text-[9px] font-black uppercase px-2 py-1 rounded border ${isPicado ? 'border-emerald-200 text-emerald-600' : 'border-rose-100 text-rose-500'}">
-                        ${isPicado ? 'LIDO ' + isPicado.t : 'PENDENTE'}
+                    <span class="text-[9px] font-black uppercase px-2 py-1 rounded border ${info ? 'border-emerald-200 text-emerald-600' : 'border-rose-100 text-rose-500'}">
+                        ${info ? 'Lido ' + info.t : 'Pendente'}
                     </span>`;
                 container.appendChild(div);
             });
 
-            document.getElementById('count-scanned').innerText = picadosCount;
-            document.getElementById('count-missing').innerText = listaBultosOFICIAL.length - picadosCount;
-            const pct = Math.round((picadosCount / listaBultosOFICIAL.length) * 100) || 0;
-            document.getElementById('count-percent').innerText = pct + "%";
+            document.getElementById('count-scanned').innerText = picados;
+            document.getElementById('count-missing').innerText = listaBultosOFICIAL.length - picados;
+            document.getElementById('count-percent').innerText = Math.round((picados / listaBultosOFICIAL.length)*100) + "%";
+        }
+
+        function switchTab(tab) {
+            ['scan', 'history'].forEach(t => {
+                document.getElementById(`sec-${t}`).classList.add('hidden');
+                document.getElementById(`btn-${t}`).className = 'flex-1 py-3 rounded-lg text-sm font-bold text-slate-500 transition-all uppercase';
+            });
+            document.getElementById(`sec-${tab}`).classList.remove('hidden');
+            document.getElementById(`btn-${tab}`).className = 'flex-1 py-3 rounded-lg text-sm font-bold bg-slate-900 text-white shadow-md transition-all uppercase';
+            
+            if(tab === 'scan') setTimeout(() => document.getElementById('pda-input').focus(), 200);
+            if(tab === 'history') renderHistory();
+        }
+
+        async function saveSessionToHistory() {
+            const okTotal = Object.keys(lidosNoFirebase).length;
+            if(okTotal === 0) return alert("Nada picado.");
+            if(confirm(`Arquivar inventário com ${okTotal} bultos?`)) {
+                await histRef.add({ date: new Date().toLocaleDateString(), total: okTotal, ts: Date.now() });
+                
+                // Limpa as picagens para o próximo mês (opcional - você decide se quer limpar a nuvem agora)
+                if(confirm("Deseja resetar as picagens para um novo inventário?")) {
+                    const batch = db.batch();
+                    const snap = await picagensRef.get();
+                    snap.forEach(d => batch.delete(d.ref));
+                    await batch.commit();
+                }
+                
+                alert("Arquivado!");
+                switchTab('history');
+            }
+        }
+
+        function renderHistory() {
+            histRef.orderBy('ts', 'desc').get().then(snap => {
+                const container = document.getElementById('history-container');
+                container.innerHTML = snap.empty ? '<p class="text-slate-400 italic">Sem registos.</p>' : "";
+                snap.forEach(doc => {
+                    const h = doc.data();
+                    container.innerHTML += `
+                        <div class="p-4 bg-white border rounded-xl flex justify-between items-center shadow-sm text-left">
+                            <span class="font-bold text-slate-700 italic">Inventário de ${h.date}</span>
+                            <span class="font-bold text-emerald-600 text-[10px] uppercase border border-emerald-100 px-2 py-1 rounded">${h.total} picados</span>
+                        </div>`;
+                });
+            });
         }
 
         function beep(f, d) { try { const c = new (window.AudioContext || window.webkitAudioContext)(); const o = c.createOscillator(); const g = c.createGain(); o.connect(g); g.connect(c.destination); o.frequency.value = f; o.start(); setTimeout(() => o.stop(), d * 1000); } catch(e) {} }
